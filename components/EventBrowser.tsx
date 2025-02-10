@@ -10,7 +10,7 @@ interface WeatherEvent {
 
 interface EventBrowserProps {
   events: WeatherEvent[]
-  eventType: 'nx3tvs' | 'nx3hail'
+  eventType: string
   selectedEvent: WeatherEvent | null
   onSelectEvent: (event: WeatherEvent) => void
 }

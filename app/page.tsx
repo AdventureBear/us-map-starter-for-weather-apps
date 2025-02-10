@@ -31,57 +31,56 @@ export default function Home() {
   const [mapType, setMapType] = useState<'street' | 'satellite'>('satellite');
   const [satelliteOpacity, setSatelliteOpacity] = useState(0.7);
 
-  const fetchAllWeatherData = async () => {
-    setLoading(true);
-    try {
-      const datasets = ['nx3tvs', 'nx3hail', 'nx3meso'];
-      const results: Record<string, WeatherEvent[]> = {};
-      
-      await Promise.all(datasets.map(async (dataset) => {
-        const response = await fetch(
-          `https://www.ncdc.noaa.gov/swdiws/json/${dataset}/${format(startDate, 'yyyyMMdd')}:${format(endDate, 'yyyyMMdd')}`
-        );
-        const data = await response.json();
-        const events = data.result || [];
+  useEffect(() => {
+    const fetchAllWeatherData = async () => {
+      setLoading(true);
+      try {
+        const datasets = ['nx3tvs', 'nx3hail', 'nx3meso'];
+        const results: Record<string, WeatherEvent[]> = {};
         
-        // Transform the data
-        const transformedEvents = await Promise.all(events.map(async (event: RawWeatherEvent) => {
-          const lat = event.SHAPE.split(' ')[2].slice(0, -1);
-          const lon = event.SHAPE.split(' ')[1].slice(1);
-          
-          // Fetch location name
-          const locationResponse = await fetch(
-            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+        await Promise.all(datasets.map(async (dataset) => {
+          const response = await fetch(
+            `https://www.ncdc.noaa.gov/swdiws/json/${dataset}/${format(startDate, 'yyyyMMdd')}:${format(endDate, 'yyyyMMdd')}`
           );
-          const locationData = await locationResponse.json();
+          const data = await response.json();
+          const events = data.result || [];
           
-          return {
-            lat,
-            lon,
-            datetime: event.ZTIME,
-            wsr_id: event.WSR_ID,
-            location: locationData.city 
-              ? `${locationData.city}, ${locationData.principalSubdivision}`
-              : `${locationData.principalSubdivision}`
-          };
+          // Transform the data
+          const transformedEvents = await Promise.all(events.map(async (event: RawWeatherEvent) => {
+            const lat = event.SHAPE.split(' ')[2].slice(0, -1);
+            const lon = event.SHAPE.split(' ')[1].slice(1);
+            
+            // Fetch location name
+            const locationResponse = await fetch(
+              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+            );
+            const locationData = await locationResponse.json();
+            
+            return {
+              lat,
+              lon,
+              datetime: event.ZTIME,
+              wsr_id: event.WSR_ID,
+              location: locationData.city 
+                ? `${locationData.city}, ${locationData.principalSubdivision}`
+                : `${locationData.principalSubdivision}`
+            };
+          }));
+          
+          results[dataset] = transformedEvents;
         }));
         
-        results[dataset] = transformedEvents;
-      }));
-      
-      setAllEvents(results);
-      setEvents(results[activeDataset] || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setAllEvents(results);
+        setEvents(results[activeDataset] || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Fetch all data once on component mount
-  useEffect(() => {
     fetchAllWeatherData();
-  }, []); // Empty dependency array - fetch only once
+  }, []); // Empty dependency array since we want to fetch only once
 
   // Filter events when dates or dataset changes
   useEffect(() => {
