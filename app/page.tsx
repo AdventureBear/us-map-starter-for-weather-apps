@@ -8,7 +8,7 @@ import SettingsPanel from '@/components/SettingsPanel';
 
 interface WeatherEvent {
   lat: string;
-  lon: string;
+  lng: string;
   datetime: string;
   wsr_id: string;
   location: string;
@@ -30,8 +30,48 @@ export default function Home() {
   const [selectedEvent, setSelectedEvent] = useState<WeatherEvent | null>(null);
   const [mapType, setMapType] = useState<'street' | 'satellite'>('satellite');
   const [satelliteOpacity, setSatelliteOpacity] = useState(0.7);
+  const [rawEvents, setRawEvents] = useState<RawWeatherEvent[]>([]);
 
+  // First fetch the raw weather data
   useEffect(() => {
+    const fetchWeatherData = async () => {
+      setLoading(true);
+      try {
+        console.log('Fetching weather data for:', activeDataset);
+        console.log('Date range:', format(startDate, 'yyyyMMdd'), 'to', format(endDate, 'yyyyMMdd'));
+        
+        const response = await fetch(
+          `https://www.ncdc.noaa.gov/swdiws/json/${activeDataset}/${format(startDate, 'yyyyMMdd')}:${format(endDate, 'yyyyMMdd')}`
+        );
+        const data = await response.json();
+        console.log('Raw weather data:', data);
+        
+        if (!data.result) {
+          console.error('No results in weather data');
+          setRawEvents([]);
+          return;
+        }
+
+        setRawEvents(data.result);
+      } catch (error) {
+        console.error('Error fetching weather data:', error);
+        setRawEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWeatherData();
+  }, [activeDataset, startDate, endDate]);
+
+  // Then transform events and fetch locations
+  useEffect(() => {
+    if (rawEvents.length === 0) {
+      console.log('No raw events to process');
+      return;
+    }
+
+    console.log('Processing raw events:', rawEvents);
     const fetchAllWeatherData = async () => {
       setLoading(true);
       try {
@@ -48,22 +88,30 @@ export default function Home() {
           // Transform the data
           const transformedEvents = await Promise.all(events.map(async (event: RawWeatherEvent) => {
             const lat = event.SHAPE.split(' ')[2].slice(0, -1);
-            const lon = event.SHAPE.split(' ')[1].slice(1);
+            const lng = event.SHAPE.split(' ')[1].slice(1);
             
             // Fetch location name
             const locationResponse = await fetch(
-              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+              `/api/geocode?lat=${lat}&lng=${lng}`
             );
             const locationData = await locationResponse.json();
-            
+
+            console.log("locationData", locationData)
+            console.log("locationData.places.city", locationData.places.city)
+            console.log("locationData.places.state", locationData.places.state)
             return {
               lat,
-              lon,
+              lng,
               datetime: event.ZTIME,
               wsr_id: event.WSR_ID,
-              location: locationData.city 
-                ? `${locationData.city}, ${locationData.principalSubdivision}`
-                : `${locationData.principalSubdivision}`
+              location: locationData ?
+                  `${locationData .places.city}, ${locationData .places.state}`
+                  : "unknown location",
+              // location: locationData.address
+              //   ? `${locationData.address.city || locationData.address.town || locationData.address.village || locationData.address.county}, ${locationData.address.state}`
+              //   : 'Unknown Location',
+              type: dataset,
+              // id: event.ID
             };
           }));
           
@@ -84,13 +132,71 @@ export default function Home() {
 
   // Filter events when dates or dataset changes
   useEffect(() => {
+      // console.log('Filtering events for dataset:', activeDataset);
+      // console.log('All events:', allEvents);
     const filteredEvents = allEvents[activeDataset] || [];
-    const withinDateRange = filteredEvents.filter(event => {
-      const eventDate = new Date(event.datetime);
-      return eventDate >= startDate && eventDate <= endDate;
+    // console.log('Filtered events:', filteredEvents);
+    setEvents(filteredEvents);
+  }, [activeDataset, allEvents]);
+
+  // Transform raw events into display events
+  useEffect(() => {
+    if (rawEvents.length === 0) {
+      console.log('No raw events to process');
+      return;
+    }
+
+    setLoading(true); // Set loading when starting transformation
+    console.log('Processing raw events:', rawEvents);
+    const recentEvents = rawEvents
+      .sort((a, b) => new Date(b.ZTIME).getTime() - new Date(a.ZTIME).getTime())
+      .slice(0, 10);
+
+    // Initial transform without locations
+    const initialEvents = recentEvents.map(event => ({
+      lat: event.SHAPE.split(' ')[2].slice(0, -1),
+      lng: event.SHAPE.split(' ')[1].slice(1),
+      datetime: event.ZTIME,
+      wsr_id: event.WSR_ID,
+      location: 'Loading location...',
+      type: activeDataset,
+    }));
+
+    console.log('Setting initial events:', initialEvents);
+    setAllEvents(prev => ({
+      ...prev,
+      [activeDataset]: initialEvents
+    }));
+    setLoading(false); // Set loading false after initial transform
+
+    // Background location fetching
+    initialEvents.forEach(async (event, index) => {
+      try {
+        await new Promise(resolve => setTimeout(resolve, index * 10));//set this to 1000 for commercial APIs
+        const locationResponse = await fetch(
+          `/api/geocode?lat=${event.lat}&lng=${event.lng}`
+        );
+        const locationData = await locationResponse.json();
+        
+        const location = locationData.places?.[0]
+          ? `${locationData.places[0].city}, ${locationData.places[0].state}`
+          : 'Unknown Location';
+        
+        console.log("Parsed location:", location);
+
+        setAllEvents(prev => ({
+          ...prev,
+          [activeDataset]: prev[activeDataset].map(e => 
+            e.lat === event.lat && e.lng === event.lng
+              ? { ...e, location }
+              : e
+          )
+        }));
+      } catch (error) {
+        console.error('Error fetching location:', error);
+      }
     });
-    setEvents(withinDateRange);
-  }, [activeDataset, allEvents, startDate, endDate]);
+  }, [rawEvents, activeDataset]);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">

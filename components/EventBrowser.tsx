@@ -2,7 +2,7 @@ import { format } from 'date-fns'
 
 interface WeatherEvent {
   lat: string
-  lon: string
+  lng: string
   datetime: string
   wsr_id: string
   location: string
@@ -48,7 +48,7 @@ export default function EventBrowser({ events, eventType, selectedEvent, onSelec
                 </div>
               </div>
               <div className="text-xs text-gray-400">
-                {parseFloat(event.lat).toFixed(2)}°N, {parseFloat(event.lon).toFixed(2)}°W
+                {parseFloat(event.lat).toFixed(2)}°N, {parseFloat(event.lng).toFixed(2)}°W
               </div>
             </div>
           </button>

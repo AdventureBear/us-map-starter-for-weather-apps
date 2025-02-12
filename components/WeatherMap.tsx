@@ -13,7 +13,7 @@ const MapWithNoSSR = dynamic(() => import('./Map'), {
 
 interface WeatherEvent {
   lat: string;
-  lon: string;
+  lng: string;
   datetime: string;
   wsr_id: string;
   location: string;

@@ -8,7 +8,7 @@ import 'leaflet/dist/leaflet.css'
 
 interface WeatherEvent {
   lat: string
-  lon: string
+  lng: string
   datetime: string
   wsr_id: string
   location: string
@@ -79,17 +79,17 @@ const baseIcon = new Icon({
 })
 
 export default function Map({ events, eventType, selectedEvent, mapType, satelliteOpacity }: WeatherMapProps) {
-  console.log('Map received events:', events)  // Log events received by Map
-  console.log('Map received eventType:', eventType)  // Log eventType received by Map
-  console.log('Events is array?', Array.isArray(events))  // Check if events is an array
+  // console.log('Map received events:', events)  // Log events received by Map
+  // console.log('Map received eventType:', eventType)  // Log eventType received by Map
+  // console.log('Events is array?', Array.isArray(events))  // Check if events is an array
   
   // Ensure events is an array
   const weatherEvents = Array.isArray(events) ? events : []
-  console.log('Weather events after check:', weatherEvents)  // Log processed events
+  // console.log('Weather events after check:', weatherEvents)  // Log processed events
 
   // If there's a selected event, center and zoom the map on it
   const mapCenter = selectedEvent 
-    ? [parseFloat(selectedEvent.lat), parseFloat(selectedEvent.lon)]
+    ? [parseFloat(selectedEvent.lat), parseFloat(selectedEvent.lng)]
     : [39.8283, -98.5795]
   
   const mapZoom = selectedEvent ? 7 : 3
@@ -138,7 +138,7 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
               event === selectedEvent ? (
                 <DynamicMarker
                   key={idx}
-                  position={[parseFloat(event.lat), parseFloat(event.lon)]}
+                  position={[parseFloat(event.lat), parseFloat(event.lng)]}
                   icon={eventType === 'tornado' ? baseIcon : selectedHailIcon}
                 >
                   <Popup offset={[0, -20]}>
@@ -150,7 +150,7 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
                         {event.location}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        {parseFloat(event.lat).toFixed(3)}°N, {parseFloat(event.lon).toFixed(3)}°W
+                        {parseFloat(event.lat).toFixed(3)}°N, {parseFloat(event.lng).toFixed(3)}°W
                       </div>
                       <div className="mt-2">
                         <div>Time: {event.datetime}</div>
@@ -162,7 +162,7 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
               ) : (
                 <CircleMarker
                   key={idx}
-                  center={[parseFloat(event.lat), parseFloat(event.lon)]}
+                  center={[parseFloat(event.lat), parseFloat(event.lng)]}
                   radius={6}
                   pathOptions={{
                     color: eventType === 'tornado' ? '#ef4444' : '#ef4444',
