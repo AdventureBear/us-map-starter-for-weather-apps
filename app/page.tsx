@@ -20,6 +20,16 @@ interface RawWeatherEvent {
   WSR_ID: string;
 }
 
+interface ProcessEvent {
+  lat: string;
+  lng: string;
+  datetime: string;
+  wsr_id: string;
+  location: string;
+  type: string;
+  id: string;
+}
+
 export default function Home() {
   const [events, setEvents] = useState<WeatherEvent[]>([]);
   const [allEvents, setAllEvents] = useState<Record<string, WeatherEvent[]>>({});
@@ -71,64 +81,78 @@ export default function Home() {
       return;
     }
 
-    console.log('Processing raw events:', rawEvents);
-    const fetchAllWeatherData = async () => {
-      setLoading(true);
-      try {
-        const datasets = ['nx3tvs', 'nx3hail', 'nx3meso'];
-        const results: Record<string, WeatherEvent[]> = {};
-        
-        await Promise.all(datasets.map(async (dataset) => {
-          const response = await fetch(
-            `https://www.ncdc.noaa.gov/swdiws/json/${dataset}/${format(startDate, 'yyyyMMdd')}:${format(endDate, 'yyyyMMdd')}`
-          );
-          const data = await response.json();
-          const events = data.result || [];
-          
-          // Transform the data
-          const transformedEvents = await Promise.all(events.map(async (event: RawWeatherEvent) => {
-            const lat = event.SHAPE.split(' ')[2].slice(0, -1);
-            const lng = event.SHAPE.split(' ')[1].slice(1);
-            
-            // Fetch location name
+    const processLocations = async (events: ProcessEvent[]) => {
+      const batchSize = 3;
+      for (let i = 0; i < events.length; i += batchSize) {
+        const batch = events.slice(i, i + batchSize);
+        await Promise.all(batch.map(async (event) => {
+          try {
             const locationResponse = await fetch(
-              `/api/geocode?lat=${lat}&lng=${lng}`
+              `/api/geocode?lat=${event.lat}&lng=${event.lng}`
             );
             const locationData = await locationResponse.json();
+            
+            const location = locationData.places?.[0]
+              ? `${locationData.places[0].city}, ${locationData.places[0].state}`
+              : 'Unknown Location';
 
-            console.log("locationData", locationData)
-            console.log("locationData.places.city", locationData.places.city)
-            console.log("locationData.places.state", locationData.places.state)
-            return {
-              lat,
-              lng,
-              datetime: event.ZTIME,
-              wsr_id: event.WSR_ID,
-              location: locationData ?
-                  `${locationData .places.city}, ${locationData .places.state}`
-                  : "unknown location",
-              // location: locationData.address
-              //   ? `${locationData.address.city || locationData.address.town || locationData.address.village || locationData.address.county}, ${locationData.address.state}`
-              //   : 'Unknown Location',
-              type: dataset,
-              // id: event.ID
-            };
-          }));
-          
-          results[dataset] = transformedEvents;
+            setAllEvents(prev => ({
+              ...prev,
+              [activeDataset]: prev[activeDataset].map(e => 
+                e.lat === event.lat && e.lng === event.lng
+                  ? { ...e, location }
+                  : e
+              )
+            }));
+          } catch (error) {
+            console.error('Error fetching location:', error);
+          }
         }));
-        
-        setAllEvents(results);
-        setEvents(results[activeDataset] || []);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
+        // Rate limit between batches
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     };
 
-    fetchAllWeatherData();
-  }, []); // Empty dependency array since we want to fetch only once
+    // Initial transform without locations
+    const initialEvents = rawEvents
+      .map(event => {
+        try {
+          const coordinates = event.SHAPE.split(' ');
+          const lat = parseFloat(coordinates[2].slice(0, -1));
+          const lng = parseFloat(coordinates[1].slice(1));
+
+          // Validate coordinates
+          if (isNaN(lat) || isNaN(lng) || 
+              lat < -90 || lat > 90 || 
+              lng < -180 || lng > 180) {
+            console.warn('Invalid coordinates:', { lat, lng, raw: event.SHAPE });
+            return null;
+          }
+
+          return {
+            lat: lat.toString(),
+            lng: lng.toString(),
+            datetime: event.ZTIME,
+            wsr_id: event.WSR_ID,
+            location: 'Loading location...',
+            type: activeDataset,
+            id: event.ID
+          };
+        } catch (error) {
+          console.error('Error parsing event:', error, event);
+          return null;
+        }
+      })
+      .filter((event): event is NonNullable<typeof event> => event !== null);
+
+    setAllEvents(prev => ({
+      ...prev,
+      [activeDataset]: initialEvents
+    }));
+
+    // Start background location fetching
+    processLocations(initialEvents);
+  }, [rawEvents, activeDataset]);
 
   // Filter events when dates or dataset changes
   useEffect(() => {
@@ -138,65 +162,6 @@ export default function Home() {
     // console.log('Filtered events:', filteredEvents);
     setEvents(filteredEvents);
   }, [activeDataset, allEvents]);
-
-  // Transform raw events into display events
-  useEffect(() => {
-    if (rawEvents.length === 0) {
-      console.log('No raw events to process');
-      return;
-    }
-
-    setLoading(true); // Set loading when starting transformation
-    console.log('Processing raw events:', rawEvents);
-    const recentEvents = rawEvents
-      .sort((a, b) => new Date(b.ZTIME).getTime() - new Date(a.ZTIME).getTime())
-      .slice(0, 10);
-
-    // Initial transform without locations
-    const initialEvents = recentEvents.map(event => ({
-      lat: event.SHAPE.split(' ')[2].slice(0, -1),
-      lng: event.SHAPE.split(' ')[1].slice(1),
-      datetime: event.ZTIME,
-      wsr_id: event.WSR_ID,
-      location: 'Loading location...',
-      type: activeDataset,
-    }));
-
-    console.log('Setting initial events:', initialEvents);
-    setAllEvents(prev => ({
-      ...prev,
-      [activeDataset]: initialEvents
-    }));
-    setLoading(false); // Set loading false after initial transform
-
-    // Background location fetching
-    initialEvents.forEach(async (event, index) => {
-      try {
-        await new Promise(resolve => setTimeout(resolve, index * 10));//set this to 1000 for commercial APIs
-        const locationResponse = await fetch(
-          `/api/geocode?lat=${event.lat}&lng=${event.lng}`
-        );
-        const locationData = await locationResponse.json();
-        
-        const location = locationData.places?.[0]
-          ? `${locationData.places[0].city}, ${locationData.places[0].state}`
-          : 'Unknown Location';
-        
-        console.log("Parsed location:", location);
-
-        setAllEvents(prev => ({
-          ...prev,
-          [activeDataset]: prev[activeDataset].map(e => 
-            e.lat === event.lat && e.lng === event.lng
-              ? { ...e, location }
-              : e
-          )
-        }));
-      } catch (error) {
-        console.error('Error fetching location:', error);
-      }
-    });
-  }, [rawEvents, activeDataset]);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
