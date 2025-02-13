@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import WeatherMap from '@/components/WeatherMap';
 import { format, subDays } from 'date-fns';
 import EventBrowser from '@/components/EventBrowser';
@@ -41,77 +41,37 @@ export default function Home() {
   const [mapType, setMapType] = useState<'street' | 'satellite'>('satellite');
   const [satelliteOpacity, setSatelliteOpacity] = useState(0.7);
   const [rawEvents, setRawEvents] = useState<RawWeatherEvent[]>([]);
+  const [mapBounds, setMapBounds] = useState<[[number, number], [number, number]] | null>(null);
 
-  // First fetch the raw weather data
+  // 1. Fetch data when dates or dataset changes
   useEffect(() => {
-    const fetchWeatherData = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        console.log('Fetching weather data for:', activeDataset);
-        console.log('Date range:', format(startDate, 'yyyyMMdd'), 'to', format(endDate, 'yyyyMMdd'));
-        
         const response = await fetch(
           `https://www.ncdc.noaa.gov/swdiws/json/${activeDataset}/${format(startDate, 'yyyyMMdd')}:${format(endDate, 'yyyyMMdd')}`
         );
         const data = await response.json();
-        console.log('Raw weather data:', data);
-        
-        if (!data.result) {
-          console.error('No results in weather data');
-          setRawEvents([]);
-          return;
+        if (data.result) {
+          setRawEvents(data.result);
         }
-
-        setRawEvents(data.result);
       } catch (error) {
-        console.error('Error fetching weather data:', error);
+        console.error('Error:', error);
         setRawEvents([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchWeatherData();
+    fetchData();
   }, [activeDataset, startDate, endDate]);
 
-  // Then transform events and fetch locations
+  // 2. Process raw events into valid events with initial locations
   useEffect(() => {
-    if (rawEvents.length === 0) {
+    if (!rawEvents.length) {
       console.log('No raw events to process');
       return;
     }
-
-    const processLocations = async (events: ProcessEvent[]) => {
-      const batchSize = 3;
-      for (let i = 0; i < events.length; i += batchSize) {
-        const batch = events.slice(i, i + batchSize);
-        await Promise.all(batch.map(async (event) => {
-          try {
-            const locationResponse = await fetch(
-              `/api/geocode?lat=${event.lat}&lng=${event.lng}`
-            );
-            const locationData = await locationResponse.json();
-            
-            const location = locationData.places?.[0]
-              ? `${locationData.places[0].city}, ${locationData.places[0].state}`
-              : 'Unknown Location';
-
-            setAllEvents(prev => ({
-              ...prev,
-              [activeDataset]: prev[activeDataset].map(e => 
-                e.lat === event.lat && e.lng === event.lng
-                  ? { ...e, location }
-                  : e
-              )
-            }));
-          } catch (error) {
-            console.error('Error fetching location:', error);
-          }
-        }));
-        // Rate limit between batches
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    };
 
     // Initial transform without locations
     const initialEvents = rawEvents
@@ -150,18 +110,61 @@ export default function Home() {
       [activeDataset]: initialEvents
     }));
 
+    // 3. Batch process locations
+    const processLocations = async (events: ProcessEvent[]) => {
+      const batchSize = 3;
+      for (let i = 0; i < events.length; i += batchSize) {
+        const batch = events.slice(i, i + batchSize);
+        await Promise.all(batch.map(async (event) => {
+          try {
+            const locationResponse = await fetch(
+              `/api/geocode?lat=${event.lat}&lng=${event.lng}`
+            );
+            const locationData = await locationResponse.json();
+            
+            const location = locationData.places?.[0]
+              ? `${locationData.places[0].city}, ${locationData.places[0].state}`
+              : 'Unknown Location';
+
+            setAllEvents(prev => ({
+              ...prev,
+              [activeDataset]: prev[activeDataset].map(e => 
+                e.lat === event.lat && e.lng === event.lng
+                  ? { ...e, location }
+                  : e
+              )
+            }));
+          } catch (error) {
+            console.error('Error fetching location:', error);
+          }
+        }));
+        // Rate limit between batches
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    };
+
     // Start background location fetching
     processLocations(initialEvents);
   }, [rawEvents, activeDataset]);
 
-  // Filter events when dates or dataset changes
+  // Add this function to filter events by map bounds
+  const filterEventsByBounds = useCallback((events: WeatherEvent[], bounds: [[number, number], [number, number]] | null) => {
+    if (!bounds) return events;
+    
+    const [[southLat, westLng], [northLat, eastLng]] = bounds;
+    return events.filter(event => {
+      const lat = parseFloat(event.lat);
+      const lng = parseFloat(event.lng);
+      return lat >= southLat && lat <= northLat && lng >= westLng && lng <= eastLng;
+    });
+  }, []);
+
+  // 4. Filter events by map bounds
   useEffect(() => {
-      // console.log('Filtering events for dataset:', activeDataset);
-      // console.log('All events:', allEvents);
     const filteredEvents = allEvents[activeDataset] || [];
-    // console.log('Filtered events:', filteredEvents);
-    setEvents(filteredEvents);
-  }, [activeDataset, allEvents]);
+    const boundsFilteredEvents = filterEventsByBounds(filteredEvents, mapBounds);
+    setEvents(boundsFilteredEvents);
+  }, [activeDataset, allEvents, mapBounds, filterEventsByBounds]);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
@@ -197,6 +200,7 @@ export default function Home() {
                   selectedEvent={selectedEvent}
                   mapType={mapType}
                   satelliteOpacity={satelliteOpacity}
+                  onBoundsChange={setMapBounds}
                 />
               </div>
             )}

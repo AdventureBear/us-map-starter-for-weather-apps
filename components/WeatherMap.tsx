@@ -11,6 +11,8 @@ const MapWithNoSSR = dynamic(() => import('./Map'), {
   ),
 });
 
+
+
 interface WeatherEvent {
   lat: string;
   lng: string;
@@ -25,6 +27,7 @@ interface WeatherMapProps {
   selectedEvent: WeatherEvent | null;
   mapType: 'street' | 'satellite';
   satelliteOpacity: number;
+  onBoundsChange: (bounds: [[number, number], [number, number]]) => void;
 }
 
 export default function WeatherMap(props: WeatherMapProps) {

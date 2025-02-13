@@ -5,6 +5,9 @@ import { Icon } from 'leaflet'
 import { Marker } from 'react-leaflet'
 // import { useState } from 'react'
 import 'leaflet/dist/leaflet.css'
+import { useEffect, useCallback } from 'react'
+import { format } from 'date-fns';
+
 
 interface WeatherEvent {
   lat: string
@@ -20,6 +23,7 @@ interface WeatherMapProps {
   selectedEvent: WeatherEvent | null;
   mapType: 'street' | 'satellite';
   satelliteOpacity: number;
+  onBoundsChange?: (bounds: [[number, number], [number, number]]) => void;
 }
 
 
@@ -35,10 +39,23 @@ const selectedHailIcon = new Icon({
 })
 
 // Create a component to handle map updates
-function MapUpdater({ center, zoom }: { center: [number, number], zoom: number }) {
-  const map = useMap()
-  map.setView(center, zoom)
-  return null
+function MapUpdater({ center, zoom, selectedEvent }: { 
+  center: [number, number], 
+  zoom: number, 
+  selectedEvent: WeatherEvent | null 
+}) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (selectedEvent) {
+      const eventCenter = [parseFloat(selectedEvent.lat), parseFloat(selectedEvent.lng)] as [number, number];
+      if (map.getCenter().distanceTo(eventCenter) > 1000) {
+        map.setView(eventCenter, 8, { animate: true });
+      }
+    }
+  }, [selectedEvent, map]);
+
+  return null;
 }
 
 // Add this new component at the top level of the file
@@ -78,11 +95,12 @@ const baseIcon = new Icon({
   popupAnchor: [0, -24],  // Adjusted for larger size
 })
 
-export default function Map({ events, eventType, selectedEvent, mapType, satelliteOpacity }: WeatherMapProps) {
+export default function Map({ events, eventType, selectedEvent, mapType, satelliteOpacity, onBoundsChange }: WeatherMapProps) {
   // console.log('Map received events:', events)  // Log events received by Map
   // console.log('Map received eventType:', eventType)  // Log eventType received by Map
   // console.log('Events is array?', Array.isArray(events))  // Check if events is an array
   
+
   // Ensure events is an array
   const weatherEvents = Array.isArray(events) ? events : []
   // console.log('Weather events after check:', weatherEvents)  // Log processed events
@@ -94,6 +112,16 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
   
   const mapZoom = selectedEvent ? 7 : 3
 
+  // Map bounds change handler
+  const handleBoundsChange = useCallback((map: L.Map) => {
+    const bounds = map.getBounds();
+    const boundsArray: [[number, number], [number, number]] = [
+      [bounds.getSouth(), bounds.getWest()],
+      [bounds.getNorth(), bounds.getEast()]
+    ];
+    onBoundsChange?.(boundsArray);
+  }, [onBoundsChange]);
+
   return (
     <div className="bg-white rounded-lg shadow-md">
       <div className="p-6">
@@ -101,11 +129,15 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
           <MapContainer
             center={mapCenter as [number, number]}
             zoom={mapZoom}
-            style={{ height: '100%', width: '100%' }}
-            scrollWheelZoom={false}
-            zoomControl={true}
+            className="h-[600px] w-full"
+            scrollWheelZoom={true}
+            whenReady={(map) => handleBoundsChange(map.target)}
           >
-            <MapUpdater center={mapCenter as [number, number]} zoom={mapZoom} />
+            <MapUpdater 
+              center={mapCenter as [number, number]} 
+              zoom={mapZoom} 
+              selectedEvent={selectedEvent}
+            />
             
             <LayersControl position="topright">
               <LayersControl.BaseLayer checked name="Street Map">
@@ -137,24 +169,21 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
             {weatherEvents.map((event, idx) => (
               event === selectedEvent ? (
                 <DynamicMarker
-                  key={idx}
+                  key={`${event.lat}-${event.lng}-${event.datetime}`}
                   position={[parseFloat(event.lat), parseFloat(event.lng)]}
                   icon={eventType === 'tornado' ? baseIcon : selectedHailIcon}
                 >
-                  <Popup offset={[0, -20]}>
+                  <Popup offset={[0, -20]} onOpen={() => onSelectEvent?.(event)}>
                     <div className="p-2">
-                      <div className="font-bold">
-                        {eventType === 'tornado' ? 'Tornado' : 'Hail'} Signature
+                      <div className="font-medium">{event.location}</div>
+                      <div className="text-sm text-gray-600">
+                        {format(new Date(event.datetime), 'MMM d, yyyy h:mm a')}
                       </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        {event.location}
+                      <div className="text-sm text-gray-500 mt-1">
+                        Radar: {event.wsr_id}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {parseFloat(event.lat).toFixed(3)}°N, {parseFloat(event.lng).toFixed(3)}°W
-                      </div>
-                      <div className="mt-2">
-                        <div>Time: {event.datetime}</div>
-                        <div>Radar: {event.wsr_id}</div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        {parseFloat(event.lat).toFixed(2)}°N, {parseFloat(event.lng).toFixed(2)}°W
                       </div>
                     </div>
                   </Popup>
