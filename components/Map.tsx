@@ -116,13 +116,21 @@ const baseIcon = new Icon({
 })
 
 export default function Map({ events, eventType, selectedEvent, mapType, satelliteOpacity, onBoundsChange }: WeatherMapProps) {
+  const lastBoundsRef = useRef<string>('');
+
   const boundsChangeHandler = useCallback((map: L.Map) => {
     const bounds = map.getBounds();
     const boundsArray: [[number, number], [number, number]] = [
       [bounds.getSouth(), bounds.getWest()],
       [bounds.getNorth(), bounds.getEast()]
     ];
-    onBoundsChange?.(boundsArray);
+    
+    // Only trigger if bounds have actually changed
+    const boundsKey = JSON.stringify(boundsArray);
+    if (boundsKey !== lastBoundsRef.current) {
+      lastBoundsRef.current = boundsKey;
+      onBoundsChange?.(boundsArray);
+    }
   }, [onBoundsChange]);
 
   function BoundsHandler() {
@@ -131,12 +139,14 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
     useEffect(() => {
       if (!map) return;
 
-      map.on('moveend', () => boundsChangeHandler(map));
-      map.on('zoomend', () => boundsChangeHandler(map));
+      const handleMove = () => boundsChangeHandler(map);
+      
+      map.on('moveend', handleMove);
+      map.on('zoomend', handleMove);
 
       return () => {
-        map.off('moveend', () => boundsChangeHandler(map));
-        map.off('zoomend', () => boundsChangeHandler(map));
+        map.off('moveend', handleMove);
+        map.off('zoomend', handleMove);
       };
     }, [map]);
 

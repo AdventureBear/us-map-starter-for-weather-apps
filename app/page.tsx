@@ -51,9 +51,20 @@ export default function Home() {
       const batch = events.slice(i, i + batchSize);
       await Promise.all(batch.map(async (event) => {
         try {
+          // Validate coordinates before making the request
+          if (!event.lat || !event.lng) {
+            console.warn('Invalid coordinates:', event);
+            return;
+          }
+
           const locationResponse = await fetch(
             `/api/geocode?lat=${event.lat}&lng=${event.lng}`
           );
+          
+          if (!locationResponse.ok) {
+            throw new Error(`Geocoding failed: ${locationResponse.status}`);
+          }
+
           const locationData = await locationResponse.json();
           
           const location = locationData.places?.[0]
@@ -69,7 +80,7 @@ export default function Home() {
             )
           }));
         } catch (error) {
-          console.error('Error fetching location:', error);
+          console.error('Error fetching location for:', event, error);
         }
       }));
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -101,62 +112,29 @@ export default function Home() {
 
   // 2. Process raw events into valid events with initial locations
   useEffect(() => {
-    if (rawEvents.length === 0) {
+    if (!rawEvents.length) {
       console.log('No raw events to process');
       return;
     }
 
-    const processLocations = async (events: any[]) => {
-      const batchSize = 3;
-      for (let i = 0; i < events.length; i += batchSize) {
-        const batch = events.slice(i, i + batchSize);
-        await Promise.all(batch.map(async (event) => {
-          try {
-            const locationResponse = await fetch(
-              `/api/geocode?lat=${event.lat}&lng=${event.lon}`
-            );
-            const locationData = await locationResponse.json();
-            
-            const location = locationData.places?.[0]
-              ? `${locationData.places[0].city}, ${locationData.places[0].state}`
-              : 'Unknown Location';
-
-            setAllEvents(prev => ({
-              ...prev,
-              [activeDataset]: prev[activeDataset].map(e => 
-                e.lat === event.lat && e.lon === event.lon
-                  ? { ...e, location }
-                  : e
-              )
-            }));
-          } catch (error) {
-            console.error('Error fetching location:', error);
-          }
-        }));
-        // Rate limit between batches
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    };
-
-    // Initial transform without locations
     const initialEvents = rawEvents
       .map(event => {
         try {
           const coordinates = event.SHAPE.split(' ');
           const lat = parseFloat(coordinates[2].slice(0, -1));
-          const lon = parseFloat(coordinates[1].slice(1));
+          const lng = parseFloat(coordinates[1].slice(1));
 
           // Validate coordinates
-          if (isNaN(lat) || isNaN(lon) || 
+          if (isNaN(lat) || isNaN(lng) || 
               lat < -90 || lat > 90 || 
-              lon < -180 || lon > 180) {
-            console.warn('Invalid coordinates:', { lat, lon, raw: event.SHAPE });
+              lng < -180 || lng > 180) {
+            console.warn('Invalid coordinates:', { lat, lng, raw: event.SHAPE });
             return null;
           }
 
           return {
             lat: lat.toString(),
-            lng: lon.toString(),
+            lng: lng.toString(),
             datetime: event.ZTIME,
             wsr_id: event.WSR_ID,
             location: 'Loading location...',
@@ -170,16 +148,14 @@ export default function Home() {
       })
       .filter((event): event is NonNullable<typeof event> => event !== null);
 
-    console.log('Filtered events:', initialEvents.length, 'of', rawEvents.length);
-
     setAllEvents(prev => ({
       ...prev,
       [activeDataset]: initialEvents
     }));
 
-    // Start background location fetching
+    // Use the callback for location processing
     processLocations(initialEvents);
-  }, [rawEvents, activeDataset]);
+  }, [rawEvents, activeDataset, processLocations]);
 
   // This effect filters events for the list when map bounds change
   useEffect(() => {
