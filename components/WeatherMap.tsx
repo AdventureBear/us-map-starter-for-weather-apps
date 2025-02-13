@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-
+import L from 'leaflet';
 const MapWithNoSSR = dynamic(() => import('./Map'), {
   ssr: false,
   loading: () => (
@@ -29,6 +29,8 @@ interface WeatherMapProps {
   satelliteOpacity: number;
   onBoundsChange: (bounds: [[number, number], [number, number]]) => void;
 }
+
+
 
 export default function WeatherMap(props: WeatherMapProps) {
   return <MapWithNoSSR {...props} />;

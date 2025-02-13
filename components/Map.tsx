@@ -5,9 +5,10 @@ import { Icon } from 'leaflet'
 import { Marker } from 'react-leaflet'
 // import { useState } from 'react'
 import 'leaflet/dist/leaflet.css'
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import { format } from 'date-fns';
 
+import L from 'leaflet'
 
 interface WeatherEvent {
   lat: string
@@ -57,6 +58,25 @@ function MapUpdater({ center, zoom, selectedEvent }: {
 
   return null;
 }
+const getEventIcon = (type: string, isSelected: boolean) => {
+  const baseClass = isSelected ? 'border-2 border-white shadow-lg' : '';
+  const typeColors = {
+    nx3tvs: 'bg-red-500',          // Tornado - Red
+    nx3hail: 'bg-purple-500',      // Strong Hail - Purple
+    nx3hail_all: 'bg-purple-300',  // All Hail - Light Purple
+    nx3meso: 'bg-yellow-500',      // Mesocyclone - Yellow
+    nx3mda: 'bg-yellow-300',       // Digital Meso - Light Yellow
+    nx3structure: 'bg-blue-500',   // Strong Storms - Blue
+    nx3structure_all: 'bg-blue-300', // All Storms - Light Blue
+    nldn: 'bg-yellow-400'          // Lightning - Gold
+  };
+
+  return L.divIcon({
+    className: `w-6 h-6 rounded-full ${baseClass} ${typeColors[type as keyof typeof typeColors] || 'bg-gray-500'}`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
+  });
+};
 
 // Add this new component at the top level of the file
 function DynamicMarker({ position, icon, children }: { 
@@ -96,10 +116,32 @@ const baseIcon = new Icon({
 })
 
 export default function Map({ events, eventType, selectedEvent, mapType, satelliteOpacity, onBoundsChange }: WeatherMapProps) {
-  // console.log('Map received events:', events)  // Log events received by Map
-  // console.log('Map received eventType:', eventType)  // Log eventType received by Map
-  // console.log('Events is array?', Array.isArray(events))  // Check if events is an array
-  
+  const boundsChangeHandler = useCallback((map: L.Map) => {
+    const bounds = map.getBounds();
+    const boundsArray: [[number, number], [number, number]] = [
+      [bounds.getSouth(), bounds.getWest()],
+      [bounds.getNorth(), bounds.getEast()]
+    ];
+    onBoundsChange?.(boundsArray);
+  }, [onBoundsChange]);
+
+  function BoundsHandler() {
+    const map = useMap();
+
+    useEffect(() => {
+      if (!map) return;
+
+      map.on('moveend', () => boundsChangeHandler(map));
+      map.on('zoomend', () => boundsChangeHandler(map));
+
+      return () => {
+        map.off('moveend', () => boundsChangeHandler(map));
+        map.off('zoomend', () => boundsChangeHandler(map));
+      };
+    }, [map]);
+
+    return null;
+  }
 
   // Ensure events is an array
   const weatherEvents = Array.isArray(events) ? events : []
@@ -112,16 +154,6 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
   
   const mapZoom = selectedEvent ? 7 : 3
 
-  // Map bounds change handler
-  const handleBoundsChange = useCallback((map: L.Map) => {
-    const bounds = map.getBounds();
-    const boundsArray: [[number, number], [number, number]] = [
-      [bounds.getSouth(), bounds.getWest()],
-      [bounds.getNorth(), bounds.getEast()]
-    ];
-    onBoundsChange?.(boundsArray);
-  }, [onBoundsChange]);
-
   return (
     <div className="bg-white rounded-lg shadow-md">
       <div className="p-6">
@@ -130,9 +162,9 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
             center={mapCenter as [number, number]}
             zoom={mapZoom}
             className="h-[600px] w-full"
-            scrollWheelZoom={true}
-            whenReady={(map) => handleBoundsChange(map.target)}
+            scrollWheelZoom={false}
           >
+            <BoundsHandler />
             <MapUpdater 
               center={mapCenter as [number, number]} 
               zoom={mapZoom} 
