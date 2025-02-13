@@ -1,7 +1,6 @@
-'use client';
+// 'use client';
 
 import dynamic from 'next/dynamic';
-import L from 'leaflet';
 const MapWithNoSSR = dynamic(() => import('./Map'), {
   ssr: false,
   loading: () => (

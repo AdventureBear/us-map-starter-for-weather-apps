@@ -6,13 +6,13 @@ import { format, subDays } from 'date-fns';
 import EventBrowser from '@/components/EventBrowser';
 import SettingsPanel from '@/components/SettingsPanel';
 
-interface WeatherEvent {
-  lat: string;
-  lng: string;
-  datetime: string;
-  wsr_id: string;
-  location: string;
-}
+// interface WeatherEvent {
+//   lat: string;
+//   lng: string;
+//   datetime: string;
+//   wsr_id: string;
+//   location: string;
+// }
 
 interface RawWeatherEvent {
   SHAPE: string;
@@ -27,11 +27,11 @@ interface ProcessEvent {
   wsr_id: string;
   location: string;
   type: string;
-  id: string;
+  // id: string;
 }
 
 export default function Home() {
-  const [events, setEvents] = useState<WeatherEvent[]>([]);
+  // const [events, setEvents] = useState<WeatherEvent[]>([]);
   const [allEvents, setAllEvents] = useState<Record<string, ProcessEvent[]>>({});
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 7));
@@ -139,7 +139,7 @@ export default function Home() {
             wsr_id: event.WSR_ID,
             location: 'Loading location...',
             type: activeDataset,
-            id: event.ID
+            // id: event.ID
           };
         } catch (error) {
           console.error('Error parsing event:', error, event);
@@ -198,7 +198,7 @@ export default function Home() {
   }, [activeDataset, allEvents, mapBounds]);
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 pr-16">
       <div className="space-y-6">
         <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow-xl p-6 text-white">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
@@ -214,10 +214,16 @@ export default function Home() {
             className="text-sm text-blue-400 hover:text-blue-300 transition-colors mt-2 inline-block"
           >
             Data source: NOAA Storm Events Database
+          </a> <a 
+            href="https://www.ncei.noaa.gov/products/severe-weather-data-inventory" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-sm text-blue-400 hover:text-blue-300 transition-colors mt-2 inline-block"
+          >Documentation
           </a>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-3 gap-6 ">
           <div className="col-span-2">
             {loading ? (
               <div className="flex justify-center items-center h-[600px] bg-white/10 backdrop-blur-sm rounded-lg text-white">
@@ -236,14 +242,17 @@ export default function Home() {
               </div>
             )}
           </div>
+
           <div className="col-span-1">
+          
             <EventBrowser 
               events={visibleEvents}
               eventType={activeDataset}
               selectedEvent={selectedEvent}
               onSelectEvent={setSelectedEvent}
-            />
-          </div>
+              />
+            </div>
+          
         </div>
       </div>
 

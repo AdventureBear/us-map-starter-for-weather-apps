@@ -6,6 +6,7 @@ interface WeatherEvent {
   datetime: string
   wsr_id: string
   location: string
+  type: string
 }
 
 interface EventBrowserProps {
@@ -17,7 +18,9 @@ interface EventBrowserProps {
 
 export default function EventBrowser({ events, eventType, selectedEvent, onSelectEvent }: EventBrowserProps) {
   return (
-    <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow-xl h-[600px] overflow-hidden flex flex-col">
+    <div className="bg-slate-500 rounded-lg shadow-md">
+      <div className="p-2">
+    <div className="bg-slate-800/80 backdrop-blur-sm rounded-lg shadow-xl h-[600px] overflow-hidden flex flex-col pr-2">
       <div className="p-4 border-b border-white/10">
         <h2 className="text-lg font-semibold text-white">
           {eventType === 'nx3tvs' ? 'Tornado' : eventType === 'nx3hail' ? 'Hail' : 'Mesocyclone'} Signatures
@@ -54,6 +57,8 @@ export default function EventBrowser({ events, eventType, selectedEvent, onSelec
           </button>
         ))}
       </div>
+    </div>
+    </div>
     </div>
   )
 } 

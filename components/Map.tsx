@@ -165,8 +165,8 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
   const mapZoom = selectedEvent ? 7 : 3
 
   return (
-    <div className="bg-white rounded-lg shadow-md">
-      <div className="p-6">
+    <div className="bg-slate-500 rounded-lg shadow-md">
+      <div className="p-2">
         <div className="h-[600px] w-full rounded-lg overflow-hidden">
           <MapContainer
             center={mapCenter as [number, number]}

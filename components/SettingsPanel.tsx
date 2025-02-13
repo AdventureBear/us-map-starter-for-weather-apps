@@ -29,6 +29,7 @@ const datasets = [
 
 // Add date range options
 const dateRanges = [
+  { label: 'Today', value: 'today', start: () => subDays(startOfDay(new Date()),1) },
   { label: 'Past 3 Days', value: '3days', start: () => subDays(startOfDay(new Date()), 3) },
   { label: 'This Week', value: 'week', start: () => subDays(startOfDay(new Date()), 7) },
   { label: 'This Month', value: 'month', start: () => subMonths(startOfDay(new Date()), 1) },
