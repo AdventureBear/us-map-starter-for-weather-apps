@@ -19,12 +19,12 @@ interface SettingsPanelProps {
 const datasets = [
   { id: 'nx3tvs', name: 'Tornado Signatures', description: 'Tornado Signatures from NEXRAD (Level-III TVS Product)' },
   { id: 'nx3hail', name: 'Hail Signatures', description: 'Filtered Hail Signatures (Max Size > 0 and Probability = 100%)' },
-  { id: 'nx3hail_all', name: 'All Hail Signatures', description: 'All Hail Signatures from NEXRAD' },
+  // { id: 'nx3hail_all', name: 'All Hail Signatures', description: 'All Hail Signatures from NEXRAD' },
   { id: 'nx3meso', name: 'Mesocyclone', description: 'Mesocyclone Signatures from NEXRAD' },
-  { id: 'nx3mda', name: 'Digital Mesocyclone', description: 'Digital Mesocyclone Detection Algorithm' },
-  { id: 'nx3structure', name: 'Strong Storm Cells', description: 'Filtered Storm Cells (Max Reflectivity >= 45 dBZ)' },
-  { id: 'nx3structure_all', name: 'All Storm Cells', description: 'All Storm Cells from NEXRAD' },
-  { id: 'nldn', name: 'Lightning Strikes', description: 'Lightning Strikes from Vaisala NLDN' }
+  // { id: 'nx3mda', name: 'Digital Mesocyclone', description: 'Digital Mesocyclone Detection Algorithm' },
+  // { id: 'nx3structure', name: 'Strong Storm Cells', description: 'Filtered Storm Cells (Max Reflectivity >= 45 dBZ)' },
+  // { id: 'nx3structure_all', name: 'All Storm Cells', description: 'All Storm Cells from NEXRAD' },
+  // { id: 'nldn', name: 'Lightning Strikes', description: 'Lightning Strikes from Vaisala NLDN' }
 ]
 
 // Add date range options

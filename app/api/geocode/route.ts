@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+const apiBaseURL = 'http://localhost:3000';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -10,14 +11,15 @@ export async function GET(request: Request) {
   }
 
   // const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
-  const suzyQUrl = `http://localhost:3000/find-place?lat=${lat}&lng=${lng}&limit=1`;
+  const suzyQUrl = `${apiBaseURL}/find-place?lat=${lat}&lng=${lng}`;
   // http://localhost:3000/find-place?lat=61.2181&lng=-149.9003
   const url = suzyQUrl;
 
   console.log('Fetching:', url);
 
   try {
-    await new Promise(resolve => setTimeout(resolve, 10)); // Rate limiting
+    // Rate limiting
+    // await new Promise(resolve => setTimeout(resolve, 10)); 
     
     const response = await fetch(url, {
       headers: {

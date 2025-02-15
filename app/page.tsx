@@ -6,13 +6,6 @@ import { format, subDays } from 'date-fns';
 import EventBrowser from '@/components/EventBrowser';
 import SettingsPanel from '@/components/SettingsPanel';
 
-// interface WeatherEvent {
-//   lat: string;
-//   lng: string;
-//   datetime: string;
-//   wsr_id: string;
-//   location: string;
-// }
 
 interface RawWeatherEvent {
   SHAPE: string;
@@ -34,7 +27,7 @@ export default function Home() {
   // const [events, setEvents] = useState<WeatherEvent[]>([]);
   const [allEvents, setAllEvents] = useState<Record<string, ProcessEvent[]>>({});
   const [loading, setLoading] = useState(true);
-  const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 7));
+  const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 3));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [activeDataset, setActiveDataset] = useState<string>('nx3tvs');
   const [selectedEvent, setSelectedEvent] = useState<ProcessEvent | null>(null);
@@ -83,7 +76,7 @@ export default function Home() {
           console.error('Error fetching location for:', event, error);
         }
       }));
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }, [activeDataset]);
 

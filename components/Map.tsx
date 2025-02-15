@@ -241,15 +241,38 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
                     weight: 2
                   }}
                 >
-                  <Popup offset={[0, -10]}>
+                  <Popup offset={[0, -20]} onOpen={() => onSelectEvent?.(event)}>
+                    <div className="p-2">
+                      <div className="font-bold">{event.location}</div>
+                      <div className="font-medium">
+                   {eventType === 'nx3tvs' ? 
+                   'Tornado' : eventType === 'nx3hail' ? 'Hail' : 
+                   eventType === 'nx3meso' ? 'Mesocyclone' : 
+                   eventType === 'nx3mda' ? 'Digital Mesocyclone' : 
+                   eventType === 'nx3structure' ? 'Strong Storms' : 
+                   eventType === 'nx3structure_all' ? 'All Storms' : 
+                   'Unknown'} Signatures
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {format(new Date(event.datetime), 'MMM d, yyyy h:mm a')}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        Radar: {event.wsr_id}
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        {parseFloat(event.lat).toFixed(2)}°N, {parseFloat(event.lng).toFixed(2)}°W
+                      </div>
+                    </div>
+                  </Popup>
+                  {/* {/* <Popup offset={[0, -10]}>
                     <div className="p-2">
                       <div className="font-bold">
                         {eventType === 'tornado' ? 'Tornado' : 'Hail'} Signature
                       </div>
                       <div>Time: {event.datetime}</div>
                       <div>Radar: {event.wsr_id}</div>
-                    </div>
-                  </Popup>
+                    </div> *}
+                  </Popup> */}
                 </CircleMarker>
               )
             ))}
