@@ -18,13 +18,14 @@ interface WeatherEvent {
   location: string
 }
 
-interface WeatherMapProps {
+interface MapProps {
   events: WeatherEvent[];
   eventType: string;
   selectedEvent: WeatherEvent | null;
   mapType: 'street' | 'satellite';
   satelliteOpacity: number;
   onBoundsChange?: (bounds: [[number, number], [number, number]]) => void;
+  onSelectEvent?: (event: WeatherEvent) => void;
 }
 
 
@@ -58,18 +59,18 @@ function MapUpdater({ center, zoom, selectedEvent }: {
 
   return null;
 }
-const getEventIcon = (type: string, isSelected: boolean) => {
-  const baseClass = isSelected ? 'border-2 border-white shadow-lg' : '';
-  const typeColors = {
-    nx3tvs: 'bg-red-500',          // Tornado - Red
-    nx3hail: 'bg-purple-500',      // Strong Hail - Purple
-    nx3hail_all: 'bg-purple-300',  // All Hail - Light Purple
-    nx3meso: 'bg-yellow-500',      // Mesocyclone - Yellow
-    nx3mda: 'bg-yellow-300',       // Digital Meso - Light Yellow
-    nx3structure: 'bg-blue-500',   // Strong Storms - Blue
-    nx3structure_all: 'bg-blue-300', // All Storms - Light Blue
-    nldn: 'bg-yellow-400'          // Lightning - Gold
-  };
+// const getEventIcon = (type: string, isSelected: boolean) => {
+//   const baseClass = isSelected ? 'border-2 border-white shadow-lg' : '';
+//   const typeColors = {
+//     nx3tvs: 'bg-red-500',          // Tornado - Red
+//     nx3hail: 'bg-purple-500',      // Strong Hail - Purple
+//     nx3hail_all: 'bg-purple-300',  // All Hail - Light Purple
+//     nx3meso: 'bg-yellow-500',      // Mesocyclone - Yellow
+//     nx3mda: 'bg-yellow-300',       // Digital Meso - Light Yellow
+//     nx3structure: 'bg-blue-500',   // Strong Storms - Blue
+//     nx3structure_all: 'bg-blue-300', // All Storms - Light Blue
+//     nldn: 'bg-yellow-400'          // Lightning - Gold
+//   };
 
   return L.divIcon({
     className: `w-6 h-6 rounded-full ${baseClass} ${typeColors[type as keyof typeof typeColors] || 'bg-gray-500'}`,
@@ -115,7 +116,7 @@ const baseIcon = new Icon({
   popupAnchor: [0, -24],  // Adjusted for larger size
 })
 
-export default function Map({ events, eventType, selectedEvent, mapType, satelliteOpacity, onBoundsChange }: WeatherMapProps) {
+export default function Map({ events, eventType, selectedEvent, mapType, satelliteOpacity, onBoundsChange, onSelectEvent }: MapProps) {
   const lastBoundsRef = useRef<string>('');
 
   const boundsChangeHandler = useCallback((map: L.Map) => {
@@ -215,7 +216,12 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
                   position={[parseFloat(event.lat), parseFloat(event.lng)]}
                   icon={eventType === 'tornado' ? baseIcon : selectedHailIcon}
                 >
-                  <Popup offset={[0, -20]} onOpen={() => onSelectEvent?.(event)}>
+                  <Popup 
+                    offset={[0, -20]} 
+                    eventHandlers={{
+                      add: () => onSelectEvent?.(event)
+                    }}
+                  >
                     <div className="p-2">
                       <div className="font-medium">{event.location}</div>
                       <div className="text-sm text-gray-600">
