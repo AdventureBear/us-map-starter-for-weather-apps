@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-const apiBaseURL = 'http://localhost:3000';
+const apiBaseURL = 'http://localhost:8000';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

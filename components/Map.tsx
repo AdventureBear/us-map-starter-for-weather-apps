@@ -40,6 +40,31 @@ const selectedHailIcon = new Icon({
   shadowAnchor: [12, 41]
 })
 
+function PopupContent({ event, onSelectEvent }: { event: WeatherEvent, onSelectEvent: (event: WeatherEvent) => void }) {
+  
+  return (
+    <Popup 
+    offset={[0, 0]} 
+    eventHandlers={{
+      add: () => onSelectEvent?.(event)
+    }}
+    >
+      <div className="p-2">
+        <div className="font-medium">{event.location}</div>
+        <div className="text-sm text-gray-600">
+          {format(new Date(event.datetime), 'MMM d, yyyy h:mm a')}
+        </div>
+        <div className="text-sm text-gray-500 mt-1">
+          Radar: {event.wsr_id}
+        </div>
+        <div className="text-xs text-gray-400 mt-1">
+          {parseFloat(event.lat).toFixed(2)}°N, {parseFloat(event.lng).toFixed(2)}°W
+        </div>
+      </div>
+  </Popup>
+)
+}
+
 // Create a component to handle map updates
 function MapUpdater({ center, zoom, selectedEvent }: { 
   center: [number, number], 
@@ -72,12 +97,12 @@ function MapUpdater({ center, zoom, selectedEvent }: {
 //     nldn: 'bg-yellow-400'          // Lightning - Gold
 //   };
 
-  return L.divIcon({
-    className: `w-6 h-6 rounded-full ${baseClass} ${typeColors[type as keyof typeof typeColors] || 'bg-gray-500'}`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12]
-  });
-};
+//   return L.divIcon({
+//     className: `w-6 h-6 rounded-full ${baseClass} ${typeColors[type as keyof typeof typeColors] || 'bg-gray-500'}`,
+//     iconSize: [24, 24],
+//     iconAnchor: [12, 12]
+//   });
+// };
 
 // Add this new component at the top level of the file
 function DynamicMarker({ position, icon, children }: { 
@@ -209,7 +234,7 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
               </LayersControl.BaseLayer>
             </LayersControl>
 
-            {weatherEvents.map((event, idx) => (
+            {weatherEvents.map((event) => (
               event === selectedEvent ? (
                 <DynamicMarker
                   key={`${event.lat}-${event.lng}-${event.datetime}`}
@@ -238,7 +263,7 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
                 </DynamicMarker>
               ) : (
                 <CircleMarker
-                  key={idx}
+                  key={`${event.lat}-${event.lng}-${event.datetime}`}
                   center={[parseFloat(event.lat), parseFloat(event.lng)]}
                   radius={6}
                   pathOptions={{
@@ -246,19 +271,23 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
                     fillOpacity: 0.8,
                     weight: 2
                   }}
+                  eventHandlers={{
+                    click: () => {
+                      console.log('CircleMarker clicked:', event);
+                      console.log('Current selectedEvent:', selectedEvent);
+                      onSelectEvent?.(event);
+                      console.log('After onSelectEvent call');
+                    }
+                  }}
                 >
-                  <Popup offset={[0, -20]} onOpen={() => onSelectEvent?.(event)}>
+                  <Popup 
+                    offset={[0, -20]} 
+                    eventHandlers={{
+                      add: () => onSelectEvent?.(event)
+                    }}
+                  >
                     <div className="p-2">
-                      <div className="font-bold">{event.location}</div>
-                      <div className="font-medium">
-                   {eventType === 'nx3tvs' ? 
-                   'Tornado' : eventType === 'nx3hail' ? 'Hail' : 
-                   eventType === 'nx3meso' ? 'Mesocyclone' : 
-                   eventType === 'nx3mda' ? 'Digital Mesocyclone' : 
-                   eventType === 'nx3structure' ? 'Strong Storms' : 
-                   eventType === 'nx3structure_all' ? 'All Storms' : 
-                   'Unknown'} Signatures
-                      </div>
+                      <div className="font-medium">{event.location}</div>
                       <div className="text-sm text-gray-600">
                         {format(new Date(event.datetime), 'MMM d, yyyy h:mm a')}
                       </div>
@@ -270,15 +299,6 @@ export default function Map({ events, eventType, selectedEvent, mapType, satelli
                       </div>
                     </div>
                   </Popup>
-                  {/* {/* <Popup offset={[0, -10]}>
-                    <div className="p-2">
-                      <div className="font-bold">
-                        {eventType === 'tornado' ? 'Tornado' : 'Hail'} Signature
-                      </div>
-                      <div>Time: {event.datetime}</div>
-                      <div>Radar: {event.wsr_id}</div>
-                    </div> *}
-                  </Popup> */}
                 </CircleMarker>
               )
             ))}

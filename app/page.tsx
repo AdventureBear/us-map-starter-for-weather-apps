@@ -85,6 +85,8 @@ export default function Home() {
     const fetchData = async () => {
       setLoading(true);
       try {
+        console.log("Fetching weather data")
+        console.log(`https://www.ncdc.noaa.gov/swdiws/json/${activeDataset}/${format(startDate, 'yyyyMMdd')}:${format(endDate, 'yyyyMMdd')}`)
         const response = await fetch(
           `https://www.ncdc.noaa.gov/swdiws/json/${activeDataset}/${format(startDate, 'yyyyMMdd')}:${format(endDate, 'yyyyMMdd')}`
         );
@@ -159,24 +161,24 @@ export default function Home() {
     }
     
     const [[southLat, westLng], [northLat, eastLng]] = mapBounds;
-    console.log('Map bounds:', { southLat, westLng, northLat, eastLng });
+    // console.log('Map bounds:', { southLat, westLng, northLat, eastLng });
     
     const filtered = currentEvents.filter(event => {
       const lat = parseFloat(event.lat);
       const lng = parseFloat(event.lng);
       
       // Debug log for filtering
-      console.log('Checking event:', {
-        location: event.location,
-        lat,
-        lng,
-        inBounds: (
-          lat >= southLat && 
-          lat <= northLat && 
-          lng >= westLng && 
-          lng <= eastLng
-        )
-      });
+      // console.log('Checking event:', {
+      //   location: event.location,
+      //   lat,
+      //   lng,
+      //   inBounds: (
+      //     lat >= southLat && 
+      //     lat <= northLat && 
+      //     lng >= westLng && 
+      //     lng <= eastLng
+      //   )
+      // });
       
       return (
         lat >= southLat && 
