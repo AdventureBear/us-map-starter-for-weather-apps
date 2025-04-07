@@ -1,13 +1,11 @@
-
-
 import './globals.css'
 import { Inter } from 'next/font/google'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Severe Weather Explorer',
-  description: 'Track and analyze severe weather events across the United States',
+  title: 'Weather Mapping Starter App',
+  description: 'A starter template for building weather mapping applications',
 }
 
 export default function RootLayout({
@@ -18,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} min-h-screen bg-gray-50`}>
-        <main >
+        <main>
           {children}
         </main>
       </body>
