@@ -11,7 +11,6 @@ export const weatherReports: Marker[] = weatherReportsJson.map(report => ({
   time: report.time || new Date().toISOString(),
   comments: report.comments || '',
   county: report.county || 'Unknown',
-  severity: 1,
   size: report.size,
   speed: report.speed
 })); 

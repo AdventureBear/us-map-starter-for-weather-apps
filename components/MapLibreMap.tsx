@@ -131,7 +131,7 @@ export default function MapLibreMap({
         map.current = null;
       }
     };
-  }, [mapType, apiKey]);
+  }, [mapType, apiKey, onBoundsChange, userLocation]);
 
   // Update map style when mapType changes
   useEffect(() => {

@@ -7,7 +7,7 @@ export interface Marker {
   time: string;
   comments: string;
   county: string;
-  severity: 'low' | 'medium' | 'high' | undefined;
+  severity?: 'low' | 'medium' | 'high';
   description?: string;
   size?: string;
   speed?: string;
