@@ -46,6 +46,7 @@ export default function MapLibreMap({
   mapType,
   satelliteOpacity,
   onBoundsChange,
+  onAddMarker,
   markers = [],
   onCenterOnUser = false,
   onCenterComplete,
@@ -56,94 +57,92 @@ export default function MapLibreMap({
 }: MapLibreMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
-
-  // Get API key from environment variable
-  const apiKey = process.env.MAPTILER_API_KEY;
-  if (!apiKey) {
-    console.error('MapTiler API key is not set. Please add MAPTILER_API_KEY to your .env.local file');
-  }
 
   // Initialize map
   useEffect(() => {
     if (map.current) return;
 
-    // Note: MapLibre uses [longitude, latitude] format
-    const center: [number, number] = userLocation 
-      ? [userLocation[1], userLocation[0]] // Convert from [lat, lng] to [lng, lat]
-      : [-98.5795, 39.8283]; // Center of the US
-    const zoom = userLocation ? 10 : 3; // Changed from 4 to 3 for a wider view
+    const initializeMap = async () => {
+      try {
+        // Get map style from our API route
+        const styleResponse = await fetch(`/api/map-style?type=${mapType === 'street' ? 'streets' : mapType}`);
+        if (!styleResponse.ok) {
+          const errorData = await styleResponse.json();
+          console.error('Map style error:', errorData);
+          throw new Error(errorData.details || 'Failed to load map style');
+        }
+        const style = await styleResponse.json();
 
-    map.current = new maplibregl.Map({
-      container: mapContainer.current!,
-      style: mapType === 'street' 
-        ? `https://api.maptiler.com/maps/streets/style.json?key=${apiKey}`
-        : `https://api.maptiler.com/maps/satellite/style.json?key=${apiKey}`,
-      center: center,
-      zoom: zoom,
-      attributionControl: false
-    });
+        map.current = new maplibregl.Map({
+          container: mapContainer.current!,
+          style: style,
+          center: [-98.5795, 39.8283], // Center of the US
+          zoom: 4
+        });
 
-    // Add navigation control
-    map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
+        // Add navigation control
+        map.current.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-    // Add attribution
-    map.current.addControl(new maplibregl.AttributionControl({
-      compact: true
-    }));
+        // Add attribution
+        map.current.addControl(new maplibregl.AttributionControl({
+          compact: true
+        }));
 
-    // Handle map click
-    map.current.on('click', (e) => {
-      // Check if we clicked on a marker by comparing coordinates
-      const clickedMarker = markersRef.current.find(marker => {
-        const markerLngLat = marker.getLngLat();
-        const clickLngLat = e.lngLat;
-        
-        // Check if click is within a small radius of the marker
-        const distance = Math.sqrt(
-          Math.pow(markerLngLat.lng - clickLngLat.lng, 2) +
-          Math.pow(markerLngLat.lat - clickLngLat.lat, 2)
-        );
-        
-        return distance < 0.01; // Adjust this threshold as needed
-      });
-      
-      if (clickedMarker) {
-        clickedMarker.togglePopup();
-      }
-    });
+        // Handle map click
+        map.current.on('click', (e) => {
+          if (onAddMarker) {
+            onAddMarker(e.lngLat.lat, e.lngLat.lng);
+          }
+        });
 
-    // Handle bounds change
-    map.current.on('moveend', () => {
-      if (onBoundsChange && map.current) {
-        const bounds = map.current.getBounds();
-        onBoundsChange([
-          [bounds.getSouth(), bounds.getWest()],
-          [bounds.getNorth(), bounds.getEast()]
-        ]);
-      }
-    });
+        // Handle bounds change
+        map.current.on('moveend', () => {
+          if (onBoundsChange && map.current) {
+            const bounds = map.current.getBounds();
+            onBoundsChange([
+              [bounds.getSouth(), bounds.getWest()],
+              [bounds.getNorth(), bounds.getEast()]
+            ]);
+          }
+        });
 
-    return () => {
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
+        return () => {
+          if (map.current) {
+            map.current.remove();
+            map.current = null;
+          }
+        };
+      } catch (error) {
+        console.error('Error initializing map:', error);
       }
     };
-  }, [mapType, apiKey, onBoundsChange, userLocation]);
+
+    initializeMap();
+  }, [mapType, onBoundsChange, onAddMarker]);
 
   // Update map style when mapType changes
   useEffect(() => {
     if (!map.current) return;
 
-    const style = mapType === 'street' 
-      ? `https://api.maptiler.com/maps/streets/style.json?key=${apiKey}`
-      : `https://api.maptiler.com/maps/satellite/style.json?key=${apiKey}`;
+    const updateMapStyle = async () => {
+      try {
+        const styleResponse = await fetch(`/api/map-style?type=${mapType === 'street' ? 'streets' : mapType}`);
+        if (!styleResponse.ok) {
+          const errorData = await styleResponse.json();
+          console.error('Map style error:', errorData);
+          throw new Error(errorData.details || 'Failed to load map style');
+        }
+        const style = await styleResponse.json();
+        map.current?.setStyle(style);
+      } catch (error) {
+        console.error('Error updating map style:', error);
+      }
+    };
 
-    map.current.setStyle(style);
-  }, [mapType, apiKey]);
+    updateMapStyle();
+  }, [mapType]);
 
   // Update satellite opacity
   useEffect(() => {
@@ -184,7 +183,6 @@ export default function MapLibreMap({
           (position) => {
             const { latitude, longitude } = position.coords;
             const newLocation: [number, number] = [longitude, latitude]; // [lng, lat] format
-            setUserLocation([latitude, longitude]); // Store in [lat, lng] format for consistency
             
             if (map.current) {
               map.current.flyTo({
