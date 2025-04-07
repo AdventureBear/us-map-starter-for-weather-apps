@@ -117,7 +117,7 @@ export default function DocsPage() {
           {/* Star Reminder */}
           <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
             <p className="text-blue-800 font-medium">
-              ⭐️ Found this helpful? Don&apos;t forget to star our GitHub repository to show your support and stay updated with new features! ⭐️
+              ⭐️ Found this helpful? Don&apos;t forget to star our <a href="https://github.com/AdventureBear/us-map-starter-for-weather-apps" className="text-blue-600 hover:text-blue-800 underline">GitHub repository</a> to show your support and stay updated with new features! ⭐️
             </p>
           </div>
         </div>

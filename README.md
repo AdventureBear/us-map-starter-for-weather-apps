@@ -1,4 +1,16 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# US Map Starter for Weather Apps
+
+A Next.js starter project for building weather visualization applications with MapLibre GL JS.
+
+## Features
+
+- Interactive US map with MapLibre GL JS
+- Support for multiple map types (street, satellite)
+- Radar overlay integration
+- Weather warning polygons
+- Custom markers for weather events
+- Location search functionality
+- Responsive design
 
 ## Getting Started
 
@@ -16,21 +28,22 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Documentation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Check out the [documentation page](http://localhost:3000/docs) for more information about the project and how to extend it.
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+To learn more about the technologies used in this project:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Next.js Documentation](https://nextjs.org/docs)
+- [MapLibre GL JS Documentation](https://maplibre.org/maplibre-gl-js-docs/api/)
+- [MapTiler API Documentation](https://docs.maptiler.com/cloud/api/)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Contributing
 
-## Deploy on Vercel
+Feel free to contribute to this project by submitting issues or pull requests on [GitHub](https://github.com/AdventureBear/us-map-starter-for-weather-apps).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is open source and available under the MIT License.
