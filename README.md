@@ -4,6 +4,7 @@ A Next.js starter project for building weather visualization applications with M
 
 ![App Screenshot](public/screenshots/app-screenshot.png)
 
+
 ## Features
 
 - Interactive US map with MapLibre GL JS
