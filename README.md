@@ -2,6 +2,8 @@
 
 A Next.js starter project for building weather visualization applications with MapLibre GL JS.
 
+![App Screenshot](public/screenshots/app-screenshot.png)
+
 ## Features
 
 - Interactive US map with MapLibre GL JS
@@ -11,6 +13,15 @@ A Next.js starter project for building weather visualization applications with M
 - Custom markers for weather events
 - Location search functionality
 - Responsive design
+
+## Screenshots
+
+| Feature | Screenshot |
+|---------|------------|
+| Street Map View | ![Street Map](public/screenshots/street-view.png) |
+| Satellite View | ![Satellite View](public/screenshots/satellite-view.png) |
+| Radar Overlay | ![Radar Overlay](public/screenshots/radar-overlay.png) |
+| Weather Warnings | ![Weather Warnings](public/screenshots/warnings.png) |
 
 ## Getting Started
 
@@ -43,6 +54,18 @@ To learn more about the technologies used in this project:
 ## Contributing
 
 Feel free to contribute to this project by submitting issues or pull requests on [GitHub](https://github.com/AdventureBear/us-map-starter-for-weather-apps).
+
+## Adding Screenshots
+
+To add screenshots to this README:
+
+1. Take screenshots of your app using your preferred method
+2. Save them in the `public/screenshots` directory
+3. Update the table above with your new screenshots
+4. Use the following format for images:
+   ```markdown
+   ![Description](public/screenshots/filename.png)
+   ```
 
 ## License
 
