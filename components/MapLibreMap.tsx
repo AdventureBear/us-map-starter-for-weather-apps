@@ -60,9 +60,10 @@ export default function MapLibreMap({
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const apiKey = process.env.NEXT_PUBLIC_MAPTILER_API_KEY;
+  // Get API key from environment variable
+  const apiKey = process.env.MAPTILER_API_KEY;
   if (!apiKey) {
-    console.error('MapTiler API key is not set. Please add NEXT_PUBLIC_MAPTILER_API_KEY to your .env.local file');
+    console.error('MapTiler API key is not set. Please add MAPTILER_API_KEY to your .env.local file');
   }
 
   // Initialize map

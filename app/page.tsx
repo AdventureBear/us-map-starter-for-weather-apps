@@ -111,10 +111,8 @@ export default function Home() {
 
   const handleSearch = async (query: string) => {
     try {
-      // Use MapTiler's geocoding API
-      const response = await fetch(
-        `https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?key=${process.env.NEXT_PUBLIC_MAPTILER_API_KEY}`
-      );
+      // Use our server-side API route for geocoding
+      const response = await fetch(`/api/geocode?query=${encodeURIComponent(query)}`);
       
       if (!response.ok) {
         throw new Error('Search request failed');

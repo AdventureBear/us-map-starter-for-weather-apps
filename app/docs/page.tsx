@@ -40,10 +40,10 @@ export default function DocsPage() {
               To get started, you&apos;ll need to add your MapLibre API key to the environment variables. Create or edit the <code className="bg-slate-100 px-2 py-1 rounded">.env.local</code> file in your project root and add:
             </p>
             <pre className="bg-slate-100 p-4 rounded-lg mb-4 overflow-x-auto">
-              <code>NEXT_PUBLIC_MAPTILER_API_KEY=your_api_key_here</code>
+              <code>MAPTILER_API_KEY=your_api_key_here</code>
             </pre>
             <p className="text-slate-600">
-              Replace <code className="bg-slate-100 px-2 py-1 rounded">your_api_key_here</code> with your actual MapTiler API key. This key will be used for both map tiles and geocoding services.
+              Replace <code className="bg-slate-100 px-2 py-1 rounded">your_api_key_here</code> with your actual MapTiler API key. This key will be used for both map tiles and geocoding services. <strong>Important:</strong> Never commit your <code className="bg-slate-100 px-2 py-1 rounded">.env.local</code> file to version control, as it contains sensitive information.
             </p>
           </section>
 
